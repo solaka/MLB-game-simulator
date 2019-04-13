@@ -107,15 +107,19 @@ The model that yielded the best results (per test MSE) is summarized below.
 
 <img src = 'https://github.com/solaka/MLB-game-simulator/blob/master/equations/pitcher%20survival%20model%20summary.gif'>
 
-The model is fit and documented in the file “pitcher duration model (no PC + combined runs).R”.
+The model is fit and documented in the file “pitcher duration model.R”.
+
 In the simulation model, when the starting pitcher is determined to have left the game, he is relieved by a generic, MLB-average replacement.  Although in reality that reliever may himself be relieved, no effort is made to model that here, since the assumption is made that all relievers are at the MLB average level. 
-Full game simulation
+
+#### Full game simulation
 Most of the heavy lifting is performed by the half-inning simulation function.  A complete game is simulated by another function, which repeatedly calls the half-inning function until the game is deemed to be complete.  The full game function performs the following roles:
-	Accumulate game statistics
-	Track which batter leads off the next inning
-	Track whether the starting pitcher is still in the game
-	Track scores by inning
-	Determine when the game is over
-DFS scoring
-Finally, given the cumulative simulated game statistics, DFS scores must be assigned to players, which is performed by another function.  Assigning points is straightforward for most stats, for example multiplying total singles by DFS points awarded per single.  However, the function also checks to see whether either pitcher should be credited with a win, which for the purpose of this model occurs if the starter was still in immediately before his team permanently took the lead, and pitched at least five innings.  The function also checks whether points should be awarded for a complete game, shutout, or no-hitter.
+
+* Accumulate game statistics
+* Track which batter leads off the next inning
+* Track whether the starting pitcher is still in the game
+* Track scores by inning
+* Determine when the game is over
+
+#### DFS scoring
+Finally, given the cumulative simulated game statistics, DFS scores must be assigned to players, which is performed by another function.  Assigning points is straightforward for most stats, for example multiplying total singles by DFS points awarded per single.  However, the function also checks to see whether either pitcher should be credited with a win, which for the purpose of this model occurs if the starter was still in immediately before his team permanently took the lead, and pitched at least five innings.  The function also checks whether points should be awarded for a complete game, shutout, or no-hitter.  The current code uses DraftKings scoring, but another site's system could be easily substituted.
 
