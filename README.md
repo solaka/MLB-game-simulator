@@ -8,21 +8,21 @@ In a GPP contest, only those entries scoring in the top 20% or so receive any pa
 * the volatility (e.g. variance) of each player's point distribution
 * the relationships (e.g. correlation) between pairs of players' point distributions
 * the payout structure
-* arguably, the frequency with which each player is found on our competitors' rosters
+* ideally, the frequency with which each player is found on our competitors' rosters
 
 There are a few papers out there that address GPP roster optimization. [Hunter, Vielma, and Zaman (2019)](https://arxiv.org/abs/1604.01455) show how to use integer programming to optimize NHL and MLB rosters for GPP contests, and also gave a [related presentation](http://www.sloansportsconference.com/content/winning-at-daily-fantasy-sports-using-analytics/) at the 2016 Sloan Sports Analytics Conference. The paper provides a good framework for solving this problem, but ultimately they take some serious shortcuts. First and foremost, the objective is to maximize expected points scored, subject to a number of heuristic constraints. There's no explicity contemplation of variability or correlations. [Newell (2017)](http://krex.k-state.edu/dspace/handle/2097/35393) wrote her thesis on the topic, and impressively was able to incorporate the actual payout structure into a stochastic integer program. However, she also assumes that player scores are entirely independent.
 
 Recognizing the need to get my arms around the variance and covariance of player scores if I was going to optimize GPP lineups, I built a simulation model for MLB games.
 
 ## Data
-### Data acquisition
+#### Data acquisition
 The R file “download and parse retrosheet play-by-play files.R”, adapted from code from the previously mentioned blog posts by Jim Albert, downloads and unzips event files from retrosheet.org and converts them to csv files.  For this study, I used only data from the 2018 regular season.
 
 The R file “process retrosheet data and write to csv.R” uses code from Jim Albert’s GitHub site  (with some small modifications) to add base-out states and runs scored to the Retrosheet event data frame, then saves them as csv files.
 
 I also use data on an ad hoc basis from baseball-reference.com in order to validate model output, look at the most common lineups by team, etc.
 
-### Data prep
+#### Data prep
 Before simulating, I preprocessed some of the data in a separate R script (“player specific play probabilities.R”), which derives the player-specific event probabilities that are used by the simulation model.  I restricted the analysis to batters with at least 250 plate appearances (PA) in 2018, and pitchers with at least 80 innings pitched (IP).
 
 For each batter meeting the PA threshold, I calculated:
@@ -35,4 +35,74 @@ For each pitcher meeting the IP threshold, I calculated:
 
 In the simulation model itself, I also calculate the MLB averages that parallel each of these player-specific probabilities.  These are league averages are ultimately used to adjust event probabilities by opening base-out state, or alternately to plug generic MLB players into the lineup.
 
-In all cases, probabilities are based on the empirical event frequencies.  Events are categorized by type (batting, baserunning, pitching) because the ways in which each set of probabilities are used in the simulation model differs somewhat.  See Appendix 4 for a full list of event types provided in the Retrosheet data, and how I’ve categorized them for this purpose.
+In all cases, probabilities are based on the empirical event frequencies.  Events are categorized by type (batting, baserunning, pitching) because the ways in which each set of probabilities are used in the simulation model differs somewhat.
+
+## Modeling
+Games are simulated and DFS points calculated in “baseball game simulator v1.0.R”.  At the core of the simulation model is a function that simulates half-innings of the game.  Subsequent functions call this function repeatedly to simulate a full game, and then assign DFS scores to players based on the stats they’ve accrued.
+
+#### Half-inning simulation
+First, the initial conditions are established.  The opening base-out state is obviously “no outs, none on”, expressed as “000 0”, but in addition several parameters are passed: lineup slot leading off, player IDs of the lineup, starting pitcher player ID, the pitcher’s accumulated stats for the game, and the inning number.  The utility of these parameters will become clear as the model is described.
+
+#### Event probabilities
+Before simulating which event occurs, conditional event probabilities (given the current state) must be established.  The process differs slightly for each of the three event categories.  The main idea, however, is that we need a transition probability matrix that has as its dimensions opening state, closing state, and event.  Deriving such a matrix for each player would use too small a sample size, so instead I compare the frequency of higher-level events (e.g. any baserunning event, any double, etc.) to MLB averages, and use that factor to adjust state-specific probabilities.
+
+#### Pitching events
+The “raw” probability of a pitching event (wild pitch, balk, etc.) occurring is assumed to depend on the pitcher and the current state.  P(EPi) is probability that pitcher i creates any type of pitching event (EP) as the next event, and P(EPMLB) is the MLB average probability.  The ratio of these two represents how more or less likely a given pitcher is to create a pitching event than the MLB average, and is multiplied by the MLB average probability of each type of pitching event (Ep ∈ EP) given the current state s.  
+P(E_ps^i )=P(E_P^i )/P(E_P^MLB ) *P(E_ps^MLB )
+
+#### Baserunning events
+The “raw” probability of a baserunning event occurring is assumed to be equal to the average of the player-specific probabilities for current baserunners.  Let m be the set of runners on base.  Where P(EBi) is the probability of any baserunning event (implicitly, across all base-out states) occurring given player i is on base:
+P(E_B^m )=(∑_(i∀m)▒P(E_B^i ) )/(|m|)
+
+Per the average MLB transition matrix, the probability of baserunning event b occurring given state s is P(EbsMLB).  Then the same probability given baserunner set m is estimated to be:
+P(E_bs^m )=P(E_B^m )/P(E_B^MLB ) *P(E_bs^MLB )
+
+#### Batting events
+Every batter has a vector of probabilities representing the rates at which each type of batting event occurred while he was at the plate.  Every pitcher has a similar vector of probabilities representing the rates at which they allowed or caused each type of batting event to occur.  A first step is to estimate event probabilities given this matchup using the log5  formula.  Let B be the rate of batting event Eb for batter i, P be the rate for pitcher j, and L be the league average rate.  The log5 formula estimates the probability of Eb in this matchup as:
+P(E_b^ij )=(BP/L)/(BP/L+(1-B)(1-P)/(1-L))
+
+Similar to before, the ratio of this probability to the MLB overall average probability for the same event (across all states) is used to adjust the probability of b occurring given state s:
+P(E_bs^ij )=P(E_b^ij )/P(E_b^MLB ) *P(E_bs^MLB )
+
+The resulting vector of conditional hitting event probabilities does not necessarily sum to 1, so it is forced to do so by dividing each value by the sum of all values.
+
+Finally, the baserunning, pitching, and batting event probabilities are combined into a single vector.  In doing so, the batting probabilities are scaled down so that their sum equals one minus the sum of the baserunning and pitching event probabilities .
+
+#### Event simulation
+Given the complete event probability vector, simulating the event (double, pick-off, wild pitch, etc.) to occur is straightforward.  Ensuring that the impact of that event is appropriately recorded, however, is somewhat more difficult.
+
+First, the base-out state must be updated.  While some events result in a known result (e.g. a home run always results in the batter and all runners scoring), many others do not.  For example, the table to the right shows the ending state probabilities (based on the 2018 MLB season) starting from a runner on second with no outs (i.e. “010 0”), given the batter singles.  The runner might score, advance to third, stay on second, or be put out.  The batter could reach first, advance further on a throw on an error, or be caught out trying to advance.  For this reason, the ending state is simulated based on a vector of such conditional probabilities from the MLB average transition matrix, given the opening state and the event simulated to have occurred.
+While this step gives us the new state, it doesn’t necessarily tell us what happened to the batter and each runner.  For example, from the opening state of bases loaded and no outs -- “111 0” –assume a “generic out” is recorded, resulting in a new state of “111 1”.  From this, it’s not clear if the lead runner was forced out at home or if the batter was retired on a line drive or similar.  Fortunately, the Retrosheet data tracks runners on the basepaths, so I was able to create a multi-dimensional contingency table (opening state, closing state, event ID, runner destinations) that yields the observed probabilities necessary to record this.  In this example, the batter was retired about 69.7% of the time and the lead runner was forced out about 30.3% of the time over the 2018 MLB season.
+Statistics
+Crediting some statistics to players is straightforward.  For example, when a double is simulated to have occurred, it’s easy to credit the batter with a double and the pitcher with a hit allowed.  Runs, stolen bases, etc. are not too difficult, as they end up being a product of the baserunner tracking discussed previously.
+Runs batted in (RBIs) are more problematic.  For example, from an opening state of “001 0”, the batter records a generic out, moving the state to “000 1”.  Was the batter credited with an RBI?  Over the 2018 season, he was 98.7% of the time, but 1.3% of the time he was not…perhaps because the runner on third scored on an error that occurred after the batter was retired.  For this reason, another multidimensional contingency table is constructed that yields probabilities of the possible RBI counts credited to the batter given opening state, closing state, event, and runner destinations.  These probabilities are then used to stochastically determine the RBI assigned to the batter, given the specifics of the situation.
+Pitcher survival
+For DFS purposes, we care most about the starting pitchers since relievers are rarely (if ever) worth drafting.  The starting pitcher’s statistics (and DFS score) depend heavily on how long he remains in the game, particularly when DFS points are credited for innings pitched.  As such, an important feature to incorporate is a probabilistic survival model, where after each batter faced there is assumed to be a chance that the pitcher will be relieved.
+I started by using the following variables as predictors, where the numeric features are rolling totals of statistics accrued by the pitcher during the game:
+ 
+	Batters faced
+	Innings pitched (i.e. outs recorded/3)
+	Hits allowed
+	Walks allowed
+	Runs allowed
+	End of inning flag
+	Inning 8 flag
+	Inning 9 flag
+	No hits allowed flag
+	No runs allowed flag
+ 
+The target variable is a factor indicating whether or not the pitcher survives the previous batter to pitch to another, making this is a classification model.  However, I was most interested in the estimated probability of survival.  I looked at a random forest model, but felt there were too many cases where the model had the pitcher leaving with 100% certainty, simply because that’s what happened in the limited instances over the 2018 season.  Instead, I chose a logistic model.  Splitting the data into training and test sets with a 75/25 proportion, I used step-wise selection (both directions) to find candidate models.  I repeated the process both including and excluding all possible 2-way interactions, and also using both AIC and BIC as criteria.
+The model that yielded the best results (per test MSE) is summarized below.
+ 
+The model is fit and documented in the file “pitcher duration model (no PC + combined runs).R”.
+In the simulation model, when the starting pitcher is determined to have left the game, he is relieved by a generic, MLB-average replacement.  Although in reality that reliever may himself be relieved, no effort is made to model that here, since the assumption is made that all relievers are at the MLB average level. 
+Full game simulation
+Most of the heavy lifting is performed by the half-inning simulation function.  A complete game is simulated by another function, which repeatedly calls the half-inning function until the game is deemed to be complete.  The full game function performs the following roles:
+	Accumulate game statistics
+	Track which batter leads off the next inning
+	Track whether the starting pitcher is still in the game
+	Track scores by inning
+	Determine when the game is over
+DFS scoring
+Finally, given the cumulative simulated game statistics, DFS scores must be assigned to players, which is performed by another function.  Assigning points is straightforward for most stats, for example multiplying total singles by DFS points awarded per single.  However, the function also checks to see whether either pitcher should be credited with a win, which for the purpose of this model occurs if the starter was still in immediately before his team permanently took the lead, and pitched at least five innings.  The function also checks whether points should be awarded for a complete game, shutout, or no-hitter.
+
