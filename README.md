@@ -47,22 +47,27 @@ First, the initial conditions are established.  The opening base-out state is ob
 Before simulating which event occurs, conditional event probabilities (given the current state) must be established.  The process differs slightly for each of the three event categories.  The main idea, however, is that we need a transition probability matrix that has as its dimensions opening state, closing state, and event.  Deriving such a matrix for each player would use too small a sample size, so instead I compare the frequency of higher-level events (e.g. any baserunning event, any double, etc.) to MLB averages, and use that factor to adjust state-specific probabilities.
 
 #### Pitching events
-The “raw” probability of a pitching event (wild pitch, balk, etc.) occurring is assumed to depend on the pitcher and the current state.  P(EPi) is probability that pitcher i creates any type of pitching event (EP) as the next event, and P(EPMLB) is the MLB average probability.  The ratio of these two represents how more or less likely a given pitcher is to create a pitching event than the MLB average, and is multiplied by the MLB average probability of each type of pitching event (Ep ∈ EP) given the current state s.  
-P(E_ps^i )=P(E_P^i )/P(E_P^MLB ) *P(E_ps^MLB )
+The “raw” probability of a pitching event (wild pitch, balk, etc.) occurring is assumed to depend on the pitcher and the current state.  P(EPi) is probability that pitcher i creates any type of pitching event (EP) as the next event, and P(EPMLB) is the MLB average probability.  The ratio of these two represents how more or less likely a given pitcher is to create a pitching event than the MLB average, and is multiplied by the MLB average probability of each type of pitching event (Ep ∈ EP) given the current state s.
+
+<img src='https://github.com/solaka/MLB-game-simulator/blob/master/equations/Eq1.gif'>
 
 #### Baserunning events
 The “raw” probability of a baserunning event occurring is assumed to be equal to the average of the player-specific probabilities for current baserunners.  Let m be the set of runners on base.  Where P(EBi) is the probability of any baserunning event (implicitly, across all base-out states) occurring given player i is on base:
-P(E_B^m )=(∑_(i∀m)▒P(E_B^i ) )/(|m|)
+
+<img src='https://github.com/solaka/MLB-game-simulator/blob/master/equations/Eq2.gif'>
 
 Per the average MLB transition matrix, the probability of baserunning event b occurring given state s is P(EbsMLB).  Then the same probability given baserunner set m is estimated to be:
-P(E_bs^m )=P(E_B^m )/P(E_B^MLB ) *P(E_bs^MLB )
+
+<img src='https://github.com/solaka/MLB-game-simulator/blob/master/equations/Eq3.gif'>
 
 #### Batting events
 Every batter has a vector of probabilities representing the rates at which each type of batting event occurred while he was at the plate.  Every pitcher has a similar vector of probabilities representing the rates at which they allowed or caused each type of batting event to occur.  A first step is to estimate event probabilities given this matchup using the log5  formula.  Let B be the rate of batting event Eb for batter i, P be the rate for pitcher j, and L be the league average rate.  The log5 formula estimates the probability of Eb in this matchup as:
-P(E_b^ij )=(BP/L)/(BP/L+(1-B)(1-P)/(1-L))
+
+<img src='https://github.com/solaka/MLB-game-simulator/blob/master/equations/Eq4.gif'>
 
 Similar to before, the ratio of this probability to the MLB overall average probability for the same event (across all states) is used to adjust the probability of b occurring given state s:
-P(E_bs^ij )=P(E_b^ij )/P(E_b^MLB ) *P(E_bs^MLB )
+
+<img src='https://github.com/solaka/MLB-game-simulator/blob/master/equations/Eq5.gif'>
 
 The resulting vector of conditional hitting event probabilities does not necessarily sum to 1, so it is forced to do so by dividing each value by the sum of all values.
 
