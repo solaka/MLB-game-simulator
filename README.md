@@ -77,28 +77,36 @@ Finally, the baserunning, pitching, and batting event probabilities are combined
 Given the complete event probability vector, simulating the event (double, pick-off, wild pitch, etc.) to occur is straightforward.  Ensuring that the impact of that event is appropriately recorded, however, is somewhat more difficult.
 
 First, the base-out state must be updated.  While some events result in a known result (e.g. a home run always results in the batter and all runners scoring), many others do not.  For example, the table to the right shows the ending state probabilities (based on the 2018 MLB season) starting from a runner on second with no outs (i.e. “010 0”), given the batter singles.  The runner might score, advance to third, stay on second, or be put out.  The batter could reach first, advance further on a throw on an error, or be caught out trying to advance.  For this reason, the ending state is simulated based on a vector of such conditional probabilities from the MLB average transition matrix, given the opening state and the event simulated to have occurred.
+
 While this step gives us the new state, it doesn’t necessarily tell us what happened to the batter and each runner.  For example, from the opening state of bases loaded and no outs -- “111 0” –assume a “generic out” is recorded, resulting in a new state of “111 1”.  From this, it’s not clear if the lead runner was forced out at home or if the batter was retired on a line drive or similar.  Fortunately, the Retrosheet data tracks runners on the basepaths, so I was able to create a multi-dimensional contingency table (opening state, closing state, event ID, runner destinations) that yields the observed probabilities necessary to record this.  In this example, the batter was retired about 69.7% of the time and the lead runner was forced out about 30.3% of the time over the 2018 MLB season.
-Statistics
+
+#### Game statistics
 Crediting some statistics to players is straightforward.  For example, when a double is simulated to have occurred, it’s easy to credit the batter with a double and the pitcher with a hit allowed.  Runs, stolen bases, etc. are not too difficult, as they end up being a product of the baserunner tracking discussed previously.
-Runs batted in (RBIs) are more problematic.  For example, from an opening state of “001 0”, the batter records a generic out, moving the state to “000 1”.  Was the batter credited with an RBI?  Over the 2018 season, he was 98.7% of the time, but 1.3% of the time he was not…perhaps because the runner on third scored on an error that occurred after the batter was retired.  For this reason, another multidimensional contingency table is constructed that yields probabilities of the possible RBI counts credited to the batter given opening state, closing state, event, and runner destinations.  These probabilities are then used to stochastically determine the RBI assigned to the batter, given the specifics of the situation.
-Pitcher survival
+
+RBIs are more problematic.  For example, from an opening state of “001 0”, the batter records a generic out, moving the state to “000 1”.  Was the batter credited with an RBI?  Over the 2018 season, he was 98.7% of the time, but 1.3% of the time he was not…perhaps because the runner on third scored on an error that occurred after the batter was retired.  For this reason, another multidimensional contingency table is constructed that yields probabilities of the possible RBI counts credited to the batter given opening state, closing state, event, and runner destinations.  These probabilities are then used to stochastically determine the RBI assigned to the batter, given the specifics of the situation.
+
+#### Pitcher survival
 For DFS purposes, we care most about the starting pitchers since relievers are rarely (if ever) worth drafting.  The starting pitcher’s statistics (and DFS score) depend heavily on how long he remains in the game, particularly when DFS points are credited for innings pitched.  As such, an important feature to incorporate is a probabilistic survival model, where after each batter faced there is assumed to be a chance that the pitcher will be relieved.
+
 I started by using the following variables as predictors, where the numeric features are rolling totals of statistics accrued by the pitcher during the game:
  
-	Batters faced
-	Innings pitched (i.e. outs recorded/3)
-	Hits allowed
-	Walks allowed
-	Runs allowed
-	End of inning flag
-	Inning 8 flag
-	Inning 9 flag
-	No hits allowed flag
-	No runs allowed flag
+* Batters faced
+* Innings pitched (i.e. outs recorded/3)
+* Hits allowed
+* Walks allowed
+* Runs allowed
+* End of inning flag
+* Inning 8 flag
+* Inning 9 flag
+* No hits allowed flag
+* No runs allowed flag
  
 The target variable is a factor indicating whether or not the pitcher survives the previous batter to pitch to another, making this is a classification model.  However, I was most interested in the estimated probability of survival.  I looked at a random forest model, but felt there were too many cases where the model had the pitcher leaving with 100% certainty, simply because that’s what happened in the limited instances over the 2018 season.  Instead, I chose a logistic model.  Splitting the data into training and test sets with a 75/25 proportion, I used step-wise selection (both directions) to find candidate models.  I repeated the process both including and excluding all possible 2-way interactions, and also using both AIC and BIC as criteria.
+
 The model that yielded the best results (per test MSE) is summarized below.
- 
+
+<img src = 'https://github.com/solaka/MLB-game-simulator/blob/master/equations/pitcher%20survival%20model%20summary.gif'>
+
 The model is fit and documented in the file “pitcher duration model (no PC + combined runs).R”.
 In the simulation model, when the starting pitcher is determined to have left the game, he is relieved by a generic, MLB-average replacement.  Although in reality that reliever may himself be relieved, no effort is made to model that here, since the assumption is made that all relievers are at the MLB average level. 
 Full game simulation
