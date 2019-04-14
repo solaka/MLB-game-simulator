@@ -152,6 +152,8 @@ Next, let's look at the 2018 Cleveland Indians.  I chose this team because their
 
 Some differences are expected due to the randomness of the 2018 season, and largely that appears to be responsible for the differences here.  Simulated means are off by an average of -1.3%.  The only concerning result is Allen, who is a very frequent basestealer.  Allen’s mean points scored are materially understated in the model, which is due to the aforementioned limitation around how SBs that are coincidental with a batting event are registered.
 
+Also note that 
+
 What is clear is that there is a link between the degree of volatility in DFS score and the type of player.  The players' rates for all events (e.g. K, HR, etc.) play a role, but strikeout rate appears to be the strongest driver.  The graph below illustrates the link between the rate of strikeouts per PA and each players' CoV of DFS points.  Clearly, more experimentation is needed, but it appears that a players CoV can probably be pretty well estimated from their lineup position and their expected event rates.
 
 <img src = 'https://github.com/solaka/MLB-game-simulator/blob/master/tables/CV%20vs%20K%20rate.gif'>
@@ -161,3 +163,10 @@ The table below shows the matrix of Pearson correlation coefficients of DK score
 
 <img src = 'https://github.com/solaka/MLB-game-simulator/blob/master/tables/corr%20matrix%20-%20MLB%20avg.gif'>
 
+Lots to unpack here!
+
+* Correlations between batters on a given team are weakly positive, with the largest correlations coming between adjacent batters and levels growing weaker as batters grow more distant in the lineup.
+* Correlations between home team batters are slightly lower than between away team batters.  Since the home team doesn't play the bottom of the 9th inning if they're ahead, home batters receive slightly fewer plate appearances, on average.
+* For a similar reason, batters higher in the lineup are more negatively correlated with opposing pitchers than those lower down.
+* All hitters show a relatively strong negative correlation with the opposing pitcher, which is to be expected.  The magnitude of correlation appears to decrease slightly for players lower in the lineup, possibly because they tend to receive fewer at bats and tend to contribute less to the opposing pitcher’s (mis)fortunes.
+* 
