@@ -14,6 +14,8 @@ There are a few papers out there that address GPP roster optimization. [Hunter, 
 
 Recognizing the need to get my arms around the variance and covariance of player scores if I was going to optimize GPP lineups, I built this simulation model for MLB games.  It's hardly the first of its kind, though I'm not aware of one that facilitates an analysis of DFS scoring in this way.  The fact that the focus is on DFS permits a few shortcuts (e.g. ABs are slightly misstated because I don't track sacrifice flies), but at some point I may go back and address those, if only to produce even more realistic-looking boxscores.
 
+You might ask: why bother with a simulation model, when you could just look up actual DFS scores for these players and calculate variances and covariances?  You could, but there would be a lot of noise, and a small sample size.  Batters come and go, move around in the lineup, and face different types and levels of pitchers.  And even if things were completely stable, you'd only have 162 observations to work with.  A good simulation model -- one that correctly reflects event probabilities and the mechanics of a baseball game -- allows us to look at any lineup configuration with any set of players, and to examine the results of thousands of trials.
+
 ## Data
 #### Data acquisition
 The R file “download and parse retrosheet play-by-play files.R”, adapted from code from the previously mentioned blog posts by Jim Albert, downloads and unzips event files from retrosheet.org and converts them to csv files.  For this study, I used only data from the 2018 regular season.
@@ -136,3 +138,20 @@ Most of the differences are small and explainable.  One isn't, and that is expla
 * Runs (R) and RBIs are higher by 1.7%.  While doubles, HRs, etc. are directly simulated from observed frequencies, runs and RBIs are a product of the simulated mechanics of a baseball game.  Besides the additional uncertainty inherent with that, it may be that a perfectly balanced lineup comprised of all MLB-average players is very slightly more productive than a lineup consisting of good and bad players, who are average in the aggregate.
 
 Stolen bases (SB) and caught stealing (CS) show the largest discrepancies.  The reason for the differences is that in the Retrosheet data, when a SB or CS occurs on the same play as a strikeout or a walk, the play is recorded as the latter (i.e. the batting event).  Therefore, the SB and CS event probabilities used in the current model are understated.  Fortunately, the understatement on SB, while a concern, is not fatally large.  CS is not a point scoring event in DraftKings scoring.  Also, note that the base-out state transition probabilities do contemplate the possibility of these concurrent events.  Said differently, it’s not that these types of event aren’t occurring at an appropriate rate in the mode, only that runners are not being credited with them properly when they do occur.  That said, it's an issue that will be corrected in the next version of the model.
+
+## Variability
+To set a baseline, the table below shows the mean, standard deviation, and coefficient of variation of DK points for nine identical, MLB-average players across 50,000 simulated games.
+
+<img src = 'https://github.com/solaka/MLB-game-simulator/blob/master/tables/variability%20table%201.gif'>
+
+Mean points decrease fairly linearly as we move down the lineup for an obvious reason: the higher a player appears in the lineup, the more likely he is to receive an extra plate appearance.  Conversely, the coefficient of variation increases as we move lower in the lineup.  However, the reason is the same: more plate appearances leads to lower relative volatility since the sample size is larger.
+
+Next, let's look at the 2018 Cleveland Indians.  I chose this team because their 2018 lineup was *relatively* consistent throughout the season, so distortions from players moving around in the order should be minimized.  The table below shows the mean, standard deviation, and coefficient of variation of actual and simulated outcomes of DraftKings points for players in the primary 2018 lineup. 
+
+<img src = 'https://github.com/solaka/MLB-game-simulator/blob/master/tables/variability%20table%202.gif'>
+
+Some differences are expected due to the randomness of the 2018 season, and largely that appears to be responsible for the differences here.  Simulated means are off by an average of -1.3%.  The only concerning result is Allen, who is a very frequent basestealer.  Allen’s mean points scored are materially understated in the model, which is due to the aforementioned limitation around how SBs that are coincidental with a batting event are registered.
+
+What is clear is that there is a link between the degree of volatility in DFS score and the type of player.  The players' rates for all events (e.g. K, HR, etc.) play a role, but strikeout rate appears to be the strongest driver.  The graph below illustrates the link between the rate of strikeouts per PA and each players CoV of DFS points.  Clearly, more experimentation is needed, but 
+
+
