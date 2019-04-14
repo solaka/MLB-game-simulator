@@ -140,7 +140,7 @@ Most of the differences are small and explainable.  One isn't, and that is expla
 Stolen bases (SB) and caught stealing (CS) show the largest discrepancies.  The reason for the differences is that in the Retrosheet data, when a SB or CS occurs on the same play as a strikeout or a walk, the play is recorded as the latter (i.e. the batting event).  Therefore, the SB and CS event probabilities used in the current model are understated.  Fortunately, the understatement on SB, while a concern, is not fatally large.  CS is not a point scoring event in DraftKings scoring.  Also, note that the base-out state transition probabilities do contemplate the possibility of these concurrent events.  Said differently, it’s not that these types of event aren’t occurring at an appropriate rate in the mode, only that runners are not being credited with them properly when they do occur.  That said, it's an issue that will be corrected in the next version of the model.
 
 ## Variability
-To set a baseline, the table below shows the mean, standard deviation, and coefficient of variation of DK points for nine identical, MLB-average players across 50,000 simulated games.
+To set a baseline, the table below shows the mean, standard deviation, and coefficient of variation (CoV) of DK points for nine identical, MLB-average players across 50,000 simulated games.
 
 <img src = 'https://github.com/solaka/MLB-game-simulator/blob/master/tables/variability%20table%201.gif'>
 
@@ -152,6 +152,12 @@ Next, let's look at the 2018 Cleveland Indians.  I chose this team because their
 
 Some differences are expected due to the randomness of the 2018 season, and largely that appears to be responsible for the differences here.  Simulated means are off by an average of -1.3%.  The only concerning result is Allen, who is a very frequent basestealer.  Allen’s mean points scored are materially understated in the model, which is due to the aforementioned limitation around how SBs that are coincidental with a batting event are registered.
 
-What is clear is that there is a link between the degree of volatility in DFS score and the type of player.  The players' rates for all events (e.g. K, HR, etc.) play a role, but strikeout rate appears to be the strongest driver.  The graph below illustrates the link between the rate of strikeouts per PA and each players CoV of DFS points.  Clearly, more experimentation is needed, but 
+What is clear is that there is a link between the degree of volatility in DFS score and the type of player.  The players' rates for all events (e.g. K, HR, etc.) play a role, but strikeout rate appears to be the strongest driver.  The graph below illustrates the link between the rate of strikeouts per PA and each players' CoV of DFS points.  Clearly, more experimentation is needed, but it appears that a players CoV can probably be pretty well estimated from their lineup position and their expected event rates.
 
+<img src = 'https://github.com/solaka/MLB-game-simulator/blob/master/tables/CV%20vs%20K%20rate.gif'>
+
+## Correlation
+The table below shows the matrix of Pearson correlation coefficients of DK scores between all players in a matchup of two teams comprised of generic, MLB-average players.  (I looked at Spearman rank correlation also, but differences between the two were very slight.)
+
+<img src = 'https://github.com/solaka/MLB-game-simulator/blob/master/tables/corr%20matrix%20-%20MLB%20avg.gif'>
 
