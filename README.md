@@ -152,7 +152,7 @@ Next, let's look at the 2018 Cleveland Indians.  I chose this team because their
 
 Some differences are expected due to the randomness of the 2018 season, and largely that appears to be responsible for the differences here.  Simulated means are off by an average of -1.3%.  The only concerning result is Allen, who is a very frequent basestealer.  Allen’s mean points scored are materially understated in the model, which is due to the aforementioned limitation around how SBs that are coincidental with a batting event are registered.
 
-Also note that 
+Also note that modeled CoVs *tend* to be (but are not always) lower than observed.  That's because the modeled results are based on pitting the 2018 Cleveland lineup against an average MLB pitcher, while during their actual season they faced many different pitchers with many different ability levels, leading to greater volatility.
 
 What is clear is that there is a link between the degree of volatility in DFS score and the type of player.  The players' rates for all events (e.g. K, HR, etc.) play a role, but strikeout rate appears to be the strongest driver.  The graph below illustrates the link between the rate of strikeouts per PA and each players' CoV of DFS points.  Clearly, more experimentation is needed, but it appears that a players CoV can probably be pretty well estimated from their lineup position and their expected event rates.
 
@@ -169,4 +169,6 @@ Lots to unpack here!
 * Correlations between home team batters are slightly lower than between away team batters.  Since the home team doesn't play the bottom of the 9th inning if they're ahead, home batters receive slightly fewer plate appearances, on average.
 * For a similar reason, batters higher in the lineup are more negatively correlated with opposing pitchers than those lower down.
 * All hitters show a relatively strong negative correlation with the opposing pitcher, which is to be expected.  The magnitude of correlation appears to decrease slightly for players lower in the lineup, possibly because they tend to receive fewer at bats and tend to contribute less to the opposing pitcher’s (mis)fortunes.
+* Home and away batters are very slightly positively correlated.  That's likely because they occasionally *all* go to extra innings together and receive extra plate appearances.
+* Away batters have a slight positive correlation with their own starter, and home batters have an even smaller positive correlation with theirs.  In the former case, a good performance by the away team's batters increase the likelihood that their pitcher will receive bonus points for a win.  That's true of the home team as well, *BUT* a strong performance by the pitcher means that the game is less likely to go to extra innings, taking potential plate appearances away from home team batters.  These impacts seem to largely offset.
 * 
