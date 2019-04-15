@@ -174,3 +174,35 @@ Lots to unpack here!
 * The starting pitchers have a small negative correlation, likely because a strong performance by Pitcher A makes it less likely that Pitcher B will receive bonus points for the win, and vice versa.
 
 Now, many of these correlations are small, but given the importance of maximizing total variance in a GPP strategy, they might be very meaningful.  Consider 5 players with mean DFS points of 7, CoV of 1.0, and correlation of zero.  Assuming each is normally distributed, the 99th percentile result for the group would be 71.4.  Now assume pairwise correlations are 0.10 across the board.  The 99th percentile becomes 78.1.  Ultimately, the strategy should balance gains made by selecting positively correlated players (and/or avoiding negatively correlated players) with the value that each presents with regards to salary vs. expected points scored.
+
+## Known issues and future work
+There's lots to do!  Here's a list of known limitations.
+* State transition probabilities and baserunner assignments are invariant to the game situation.  For example, in later innings if the game is close, defenses are more likely to try to get the lead runner than if the game is a runaway.  Steals are more likely to occur in close games than otherwise.  This may not matter to long-term DFS point distributions, but might impact a single simulated box score.
+* No algorithm for determining which runs are unearned (DK only deducts points for earned).  Currently all are counted as earned, but historically about 93% of runs are earned, so not too big a distortion.
+* Runs that score on the same play on which the third out is recorded in a half inning may not be counted by the model.
+* If a runner is retired as the third out of a half-inning, the algorithm does not return the current batter to the top of the lineup in the subsequent inning.
+* The algorithm ends the half inning once three outs have been reached.  Therefore, it does not stop early for “walk off” wins, as it should.
+* Pitcher survival model seems to relieve pitchers too frequently after 8.1 or 8.2 IP.  This is a subjective observation, and needs to be examined more closely.
+* Sacrifice flies and sacrifice bunts are incorrectly credited as an at bat.  This has no bearing on DFS scoring, but does impact the box score.
+* Bullpens are assumed to be comprised entirely of MLB-average pitchers.  In reality, not only do the quality of relievers vary significantly, but the quality of reliever that the manager elects to use depends on individual matchups and the game situation.  At a minimum, could consider using team-specific bullpen quality here.
+* Some stolen bases and caught stealing are not credited to players appropriately.  The issue, for example, is that a SB that are concurrent with a strikeout is tagged in the Retrosheet data as a strikeout (EVENT_CD = 3) rather than a stolen base (EVENT_CD = 4).  The workaround will be to use the stolen base flag fields (e.g. RUN1_SB_FL, etc.) to identify basestealers, and possibly manually create new event flags that capture these concurrent events (e.g. 34 could capture strikeout + stolen base).
+* Player-specific baserunning and pitching event probabilities could potentially be defined on a more granular basis.  Currently, the algorithm looks at the probability of a runner being involved in any baserunning event while on base, and uses this to adjust MLB-wide event probabilities given the opening state. However, this doesn’t capture varying success rates, allows players who were only involved in pickoff events during the season to be simulated as having stolen a base, etc.  Only danger will be that extremely rare events (e.g. defensive indifference) could cause distortions.  Might be best to have these always take on the MLB average probability, rather than try to adjust for player experience.
+* The algorithm takes the average of runner probabilities to determine the (combined) likelihood of a baserunning event.  This is a difficult dynamic to get right; a slow runner on first might not prevent a fast runner on second from stealing, but a slow runner on second would prevent a fast runner on first from doing so.
+* While log5 is perfectly adequate and well-vetted, Healey (2015) and Doo and Kim (2018) explore some possible enhancements.
+* Currently the model is somewhat slow, taking in the neighborhood of 30 minutes to run 10,000 sims.
+* The model is more descriptive than predictive, using empirical event frequencies from the 2018 season as a basis.  While this is fine for MLB averages and also for gaining insight into variance and covariance, it should not be used to predict individual player performance directly.  To do so, there should be a separate predictive model that establishes these probabilities based on recent and long-term player performance, opposing pitcher, and other factors.
+
+## References
+Doo, W. and Kim, H. (2018).  Modeling the probability of a batter/pitcher matchup event: A Bayesian approach.  PLoS One, 13(10).
+
+Evans, B. A., Roush, J., Pitts, J. D., & Hornby, A. (2018). Evidence of Skill and Strategy in Daily Fantasy Basketball. Journal of Gambling Studies,34(3), 757-771.
+
+Healey, G. (2015). Modeling the Probability of a Strikeout for a Batter/Pitcher Matchup. IEEE Transactions on Knowledge and Data Engineering, 27(9), 2415-2423. 
+
+Hunter, D., Vielma, J.P., and Zaman, T. (2016).  Picking Winners in Daily Fantasy Sports Using Integer Programming.  Submitted to INFORMS Journal on Optimization.
+
+Marchi, M. and Albert, J. 2014. Analyzing Baseball Data with R. Boca Raton, Fla.: CRC Press.
+
+Newell, S., Easton, T. (2017).  Optimizing Tiered Daily Fantasy Sports – Mathematically Modeling DraftKings NFL Millionaire Maker Tournament.  Proceedings of the 2017 Industrial and Systems Engineering Conference.
+
+Winston, W. 2012. Mathletics. Princeton, NJ.: Princeton Press.
