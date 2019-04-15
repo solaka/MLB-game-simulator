@@ -1,5 +1,5 @@
 # MLB-game-simulator
-<img src='https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/D7K_4966_Roy_Halladay.jpg/800px-D7K_4966_Roy_Halladay.jpg' width="520" height="800">
+<img src='https://i.sportsbookreview.com/5759896c722866065c5e19fa/original-savermets.jpg?d=950x950'>
 
 ## Introduction
 If you've played any daily fantasy sports (DFS) contests, you probably know there are a few different contest formats, each of which demands a different lineup strategy. (If you're NOT familiar with DFS, here's a [primer](https://www.dailyfantasysports101.com/basics/).) In a "double-up" format, for example, the ~44% of entrants with the highest scores double their money. The strategy here is relatively straightforward: draft a lineup that maximizes the expected points scored, given salary and position constraints. (Technically, the right strategy would be 'draft a lineup that maximizes the probability that the final score will be in the top 44% of entrants, but in most cases that's probably not too different and more complicated to model.)
